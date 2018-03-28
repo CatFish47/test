@@ -14,8 +14,8 @@ var app = express();
 var server = http.createServer(app);
 
 /* Defines what port to use to listen to web requests */
-var port =  provess.env.PORT8080
-						? parseInt(proecess.env.PORT):
+var port =  process.env.PORT
+						? parseInt(process.env.PORT):
 						8080;
 
 
