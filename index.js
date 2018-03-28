@@ -26,7 +26,7 @@ app.get('/form', (req, res, next) => {
 	var filePath = path.join(__dirname, './index.html')
 
 	/* Sends the html file back to the browser */
-	//res.sendFile(filePath);
+	res.sendFile(filePath);
 });
 
 app.get('/cats', (req, res, next) => {
