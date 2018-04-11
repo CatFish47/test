@@ -13,6 +13,8 @@ var mongoose = require('mongoose');
 
 var usermodel = require('./user.js').getModel();
 
+var crypto = require('crypto');
+
 var dbAddress = process.env.MONGODB_URI || 'mongodb://127.0.0.1/spacecrash';
 
 /* Creates an express application */
@@ -41,10 +43,38 @@ function startServer() {
 	});
 
 	app.post('/form', (req, res, next) => {
+
+		// Converting the request in an user object
 		var newuser = new usermodel(req.body);
-		newuser.save(function(err) {
-			res.send(err || 'OK');
+
+		// Grabbing the password from the request
+		var password = req.body.password;
+
+		// Adding a random string to salt the password with
+		var salt = crypto.randomBytes(128).toString('base64');
+		newuser.salt = salt;
+
+		// Winding up the crypto hashing lock 10000 times
+		var iterations = 10000;
+		crypto.pbkdf2(password, salt, iterations, 256, 'sha256', function(err, hash) {
+			if(err) {
+				return res.send({error: err});
+			}
+			newuser.password = hash.toString('base64');
+			// Saving the user object to the database
+			newuser.save(function(err) {
+
+				// Handling the duplicate key errors from database
+				if(err && err.message.includes('duplicate key error') && err.message.includes('userName')) {
+					return res.send({error: 'Username, ' + req.body.userName + 'already taken'});
+				}
+				if(err) {
+					return res.send({error: err.message});
+				}
+				res.send({error: null});
+			});
 		});
+
 	});
 
 	app.get('/app', (req, res, next) => {

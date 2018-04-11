@@ -20,6 +20,11 @@
 
     <br>
 
+    <label>Username: </label>
+    <input type='text' name='username'>
+
+    <br>
+
     <div>
       <label>Password</label>
       <input type='password' name='password'>
@@ -35,6 +40,18 @@
   </div>
 
   <script>
+
+  function verifyPassword() {
+
+    var $passwords = document.querySelectorAll('input[type="password"]');
+    var isSamePassword = $passwords[0].value === $passwords[1].value;
+    if(!isSamePassword) {
+    	alert("Please enter the same password!")
+    }
+    return isSamePassword;
+
+  }
+
   function grabData() {
 
     // Getting all the input tags
@@ -66,6 +83,10 @@
 
   function sendData(data) {
 
+    if (!verifyPassword()) {
+      return;
+    }
+
     // Creating a new request to the server that contains the data
     var req = new XMLHttpRequest();
 
@@ -73,7 +94,20 @@
     req.open('POST', '/form', true);
 
     // Explain to the server that we are sending the data in json format
-    req.setRequestHeader('content-type', 'application/json')
+    req.setRequestHeader('content-type', 'application/json');
+
+    // Alert the user to any errors from the server
+    function readyStateChange() {
+    	if(req.readyState !== 4) return;
+    	if(req.status !== 200) return;
+
+    	data = JSON.parse(req.responseText);
+    	if(data.error) {
+    		alert(data.error);
+    	}
+    }
+
+    req.onreadystatechange = readyStateChange;
 
     // Sending the data in JSON format
     req.send(JSON.stringify(data));
@@ -82,6 +116,26 @@
   function submit() {
     var formData = grabData();
     sendData(formData);
+  }
+
+  function storeData() {
+
+    // Sending the data only if the passwords match
+    if(!verifyPassword()) return;
+    var data = {};
+
+    // In the function storeData:
+    for(var i = 0; i < $inputs.length; i++) {
+    	var $input = $inputs[i];
+    	if($input.type === 'text' || $input.type === 'password') {
+    		data[$input.name] =  $input.value;
+    	} else if($input.type === 'checkbox' || $input.type === 'password') {
+    		data[$input.name] =  $input.checked;
+    	} else if ($input.type === 'radio' && $input.checked || $input.type === 'password') {
+    		data[$input.name] = $input.getAttribute('answer');
+    	}
+    }
+    sendData(data);
   }
 
   var $button = document.querySelector('button')
