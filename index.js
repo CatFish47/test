@@ -1,11 +1,19 @@
 /* The express module is used to look at the address of the request and send it to the correct function */
 var express = require('express');
 
+var bodyParser = require('body-parser');
+
 /* The http module is used to listen for requests from a web browser */
 var http = require('http');
 
 /* The path module is used to transform relative paths to absolute paths */
 var path = require('path');
+
+var mongoose = require('mongoose');
+
+var usermodel = require('./user.js').getModel();
+
+var dbAddress = process.env.MONGODB_URI || 'mongodb://127.0.0.1/spacecrash';
 
 /* Creates an express application */
 var app = express();
@@ -18,34 +26,55 @@ var port =  process.env.PORT
 						? parseInt(process.env.PORT):
 						8080;
 
+function startServer() {
 
-/* Defines what function to call when a request comes from the path '/' in http://localhost:8080 */
-app.get('/form', (req, res, next) => {
+	app.use(bodyParser.json({ limit: '16mb' }));
 
-	/* Get the absolute path of the html file */
-	var filePath = path.join(__dirname, './index.html')
+	/* Defines what function to call when a request comes from the path '/' in http://localhost:8080 */
+	app.get('/form', (req, res, next) => {
 
-	/* Sends the html file back to the browser */
-	res.sendFile(filePath);
-});
+		/* Get the absolute path of the html file */
+		var filePath = path.join(__dirname, './index.html')
 
-app.get('/cats', (req, res, next) => {
-	res.send('<img src="http://r.ddmcdn.com/s_f/o_1/cx_462/cy_245/cw_1349/ch_1349/w_720/APL/uploads/2015/06/caturday-shutterstock_149320799.jpg">');
-});
+		/* Sends the html file back to the browser */
+		res.sendFile(filePath);
+	});
 
-/* Defines what function to all when the server recieves any request from http://localhost:8080 */
-server.on('listening', () => {
+	app.post('/form', (req, res, next) => {
+		var newuser = new usermodel(req.body);
+		newuser.save(function(err) {
+			res.send(err || 'OK');
+		});
+	});
 
-	/* Determining what the server is listening for */
-	var addr = server.address()
-		, bind = typeof addr === 'string'
-			? 'pipe ' + addr
-			: 'port ' + addr.port
-	;
+	app.get('/app', (req, res, next) => {
+		var filePath = path.join(__dirname, './app.html');
 
-	/* Outputs to the console that the webserver is ready to start listenting to requests */
-	console.log('Listening on ' + bind);
-});
+		res.sendFile(filePath);
+	})
 
-/* Tells the server to start listening to requests from defined port */
-server.listen(port);
+	app.post('/app', (req, res, next) => {
+		console.log(req.body);
+		res.send('OK');
+	})
+
+	/* Defines what function to all when the server recieves any request from http://localhost:8080 */
+	server.on('listening', () => {
+
+		/* Determining what the server is listening for */
+		var addr = server.address()
+			, bind = typeof addr === 'string'
+				? 'pipe ' + addr
+				: 'port ' + addr.port
+		;
+
+		/* Outputs to the console that the webserver is ready to start listenting to requests */
+		console.log('Listening on ' + bind);
+	});
+
+	/* Tells the server to start listening to requests from defined port */
+	server.listen(port);
+
+}
+
+mongoose.connect(dbAddress, startServer);
