@@ -1,0 +1,111 @@
+<html>
+<head>
+  <title>Game</title>
+  <style>
+  * {
+    padding: 0;
+    margin: 0;
+  }
+  body {
+    overflow: hidden;
+  }
+
+  #chat {
+    position:fixed;
+    right: 2vw;
+    bottom: 2vh;
+    width:28vw;
+    height:80vh;
+  }
+
+  #chat button {
+    position:absolute;
+    right:2vw;
+    bottom:2vh;
+    width:1vw;
+    font-size:2vmax;
+    width:1em;
+    height:1em;
+    outline:none;
+    border:none;
+    cursor:pointer;
+    background-color:transparent;
+  }
+
+  #chat button:hover {
+    font-size:2.2vmax;
+  }
+
+  #chat input {
+    position:absolute;
+    right:5vw;
+    bottom:1.5vh;
+    width:20vw;
+    font-size:1.5vmax;
+    padding:0.5vmax;
+    color:white;
+    background-color:transparent;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+  }
+
+  .bg-img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: url('http://unsplash.it/1200x800') center center no-repeat;
+    background-size: cover;
+
+    &:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-image: linear-gradient(to bottom right,#002f4b,#dc4225);
+      opacity: .6;
+    }
+  }
+  </style>
+</head>
+<body class="bg-img">
+  <canvas></canvas>
+  <div id='chat'>
+    <ul></ul>
+    <div>
+      <input type='text'>
+      <button>🚀</button>
+    </div>
+  </div>
+  <script src='/js/socket.io.js'></script>
+  <script>
+  var socket = io();
+  var $canvas = document.querySelector('canvas');
+  $canvas.width = window.screen.width;
+  $canvas.height = window.screen.height;
+
+  var $button = document.querySelector('button');
+  var $input = document.querySelector('input');
+  $button.addEventListener('click', function() {
+    if($input.value) {
+      socket.emit('message', $input.value);
+      $input.value = '';
+    }
+  });
+
+  socket.on('new message', function(message) {
+
+	var $ul = document.querySelector('#chat ul');
+	var $li = document.createElement('li');
+	$li.innerText = message;
+	$ul.appendChild($li)
+
+});
+
+  </script>
+</body>
+</html>
