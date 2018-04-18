@@ -47,6 +47,10 @@
     background-color:transparent;
   }
 
+  #texts {
+    color: #fff;
+  }
+
   html, body {
     width: 100%;
     height: 100%;
@@ -56,7 +60,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    background: url('http://unsplash.it/1200x800') center center no-repeat;
+    background: url('/space.jpg') center center no-repeat;
     background-size: cover;
 
     &:before {
@@ -75,7 +79,7 @@
 <body class="bg-img">
   <canvas></canvas>
   <div id='chat'>
-    <ul></ul>
+    <ul id='texts'></ul>
     <div>
       <input type='text'>
       <button>🚀</button>
@@ -83,6 +87,14 @@
   </div>
   <script src='/js/socket.io.js'></script>
   <script>
+  document.addEventListener("keypress", function(e) {
+    var key = e.keyCode || e.which;
+
+    if (key == 13) {
+      send();
+    }
+  });
+
   var socket = io();
   var $canvas = document.querySelector('canvas');
   $canvas.width = window.screen.width;
@@ -90,21 +102,25 @@
 
   var $button = document.querySelector('button');
   var $input = document.querySelector('input');
-  $button.addEventListener('click', function() {
+  $button.addEventListener('click', send);
+
+  socket.on('new message', function(message) {
+
+    var $ul = document.querySelector('#chat ul');
+    var $li = document.createElement('li');
+    $li.innerText = message;
+    $ul.appendChild($li)
+
+  });
+
+  function send(message) {
+
     if($input.value) {
       socket.emit('message', $input.value);
       $input.value = '';
     }
-  });
 
-  socket.on('new message', function(message) {
-
-	var $ul = document.querySelector('#chat ul');
-	var $li = document.createElement('li');
-	$li.innerText = message;
-	$ul.appendChild($li)
-
-});
+  }
 
   </script>
 </body>

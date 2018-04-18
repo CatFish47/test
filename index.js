@@ -17,7 +17,7 @@ var crypto = require('crypto');
 
 var Io = require('socket.io');
 
-var dbAddress = process.env.MONGODB_URI || 'mongodb://127.0.0.1/spacecrash';
+var dbAddress = process.env.MONGODB_URI || 'mongodb://127.0.0.1/fullstack';
 
 /* Creates an express application */
 var app = express();
@@ -34,29 +34,29 @@ var port =  process.env.PORT
 
 function addSockets() {
 	io.on('connection', (socket) => {
-		console.log('user connected');
-	});
-}
-
-function authenticateUser(username, password, callback) {
-
-	if(!username) return callback('No username given');
-	if(!password) return callback('No password given');
-	usermodel.findOne({userName: username}, (err, user) => {
-		if(err) return callback('Error connecting to database');
-		if(!user) return callback('Incorrect username');
-		crypto.pbkdf2(password, user.salt, 10000, 256, 'sha256', (err, resp) => {
-			if(err) return callback('Error handling password');
-			if(resp.toString('base64') === user.password) return callback(null);
-			callback('Incorrect password');
-		});
-	});
-
+		console.log('user connected')
+	})
 }
 
 function startServer() {
 
-	addSockets()
+	function verifyUser(username, password, callback) {
+
+		if(!username) return callback('No username given');
+		if(!password) return callback('No password given');
+		usermodel.findOne({username: username}, (err, user) => {
+			if(err) return callback('Error connecting to database');
+			if(!user) return callback('No user found.');
+			crypto.pbkdf2(password, user.salt, 10000, 256, 'sha256', (err, resp) => {
+				if(err) return callback('Error handling password');
+				if(resp.toString('base64') === user.password) return callback(null);
+				callback('Incorrect password');
+			});
+		});
+
+	}
+
+	addSockets();
 
 	app.use(bodyParser.json({ limit: '16mb' }));
 	app.use(express.static(path.join(__dirname, 'public')));
@@ -135,20 +135,32 @@ function startServer() {
 	})
 
 	app.post('/login', (req, res, next) => {
-		var username = req.body.userName;
+		var username = req.body.username;
 		var password = req.body.password;
-		authenticateUser(username, password, (err) => {
-			res.send({error: err});
+		verifyUser(username, password, (error) => {
+			res.send({error});
 		});
+	});
+
+	app.get('/space.jpg', (req, res, next) => {
+		var filePath = path.join(__dirname, './space.jpg');
+
+		res.sendFile(filePath);
 	});
 
 	io.on('connection', (socket) => {
 
-		console.log('user connected');
+		io.emit('new message', 'A user has connected');
 
 		socket.on('disconnect', () => {
-			console.log('user disconnected');
+			io.emit('new message', 'A user has disconnected');
 		})
+
+		socket.on('message', (message) => {
+
+			io.emit('new message', message);
+
+		});
 
 	});
 
@@ -164,18 +176,6 @@ function startServer() {
 
 		/* Outputs to the console that the webserver is ready to start listenting to requests */
 		console.log('Listening on ' + bind);
-	});
-
-	socket.on('message', (message) => {
-
-		console.log(message);
-
-	})
-
-	socket.on('message', (message) => {
-
-		io.emit('new message', message);
-
 	});
 
 	/* Tells the server to start listening to requests from defined port */
