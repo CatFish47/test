@@ -17,6 +17,12 @@ var crypto = require('crypto');
 
 var Io = require('socket.io');
 
+var passport = require('passport');
+
+var LocalStrategy = require('passport-local').Strategy;
+
+var session = require('express-session');
+
 var dbAddress = process.env.MONGODB_URI || 'mongodb://127.0.0.1/fullstack';
 
 /* Creates an express application */
@@ -49,7 +55,7 @@ function startServer() {
 			if(!user) return callback('No user found.');
 			crypto.pbkdf2(password, user.salt, 10000, 256, 'sha256', (err, resp) => {
 				if(err) return callback('Error handling password');
-				if(resp.toString('base64') === user.password) return callback(null);
+				if(resp.toString('base64') === user.password) return callback(null, user);
 				callback('Incorrect password');
 			});
 		});
@@ -60,6 +66,25 @@ function startServer() {
 
 	app.use(bodyParser.json({ limit: '16mb' }));
 	app.use(express.static(path.join(__dirname, 'public')));
+
+	app.use(session({ secret: 'rawr'}));
+	app.use(passport.initialize());
+	app.use(passport.session());
+
+	passport.use(new LocalStrategy(
+		{usernameField: 'username',
+		passwordField: 'password'},
+		verifyUser));
+
+	passport.serializeUser(function(user, done) {
+		done(null, user.id);
+	});
+
+	passport.deserializeUser(function(id, done) {
+		usermodel.findById(id, function (err, user) {
+			done(err, user);
+		});
+	});
 
 	/* Defines what function to call when a request comes from the path '/' in http://localhost:8080 */
 	app.get('/form', (req, res, next) => {
@@ -118,6 +143,7 @@ function startServer() {
 	})
 
 	app.get('/game', (req, res, next) => {
+		if(!req.user) res.redirect('./login')
 		var filePath = path.join(__dirname, './game.html');
 
 		res.sendFile(filePath);
@@ -135,12 +161,18 @@ function startServer() {
 	})
 
 	app.post('/login', (req, res, next) => {
-		var username = req.body.username;
-		var password = req.body.password;
-		verifyUser(username, password, (error) => {
-			res.send({error});
+
+	passport.authenticate('local', function(err, user) {
+		if(err) return res.send({error: err});
+
+		req.logIn(user, (err) => {
+			if (err) return res.send({error: err});
+			return res.send({error: null});
 		});
-	});
+
+	})(req, res, next);
+
+});
 
 	app.get('/space.jpg', (req, res, next) => {
 		var filePath = path.join(__dirname, './space.jpg');
@@ -163,6 +195,13 @@ function startServer() {
 		});
 
 	});
+
+	app.get('/logout', (req, res, next) => {
+
+	req.logOut();
+	res.redirect('/login');
+
+});
 
 	/* Defines what function to all when the server recieves any request from http://localhost:8080 */
 	server.on('listening', () => {
