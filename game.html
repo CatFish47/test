@@ -47,6 +47,18 @@
     background-color:transparent;
   }
 
+  #chat ul > li {
+
+	   list-style-type: none;
+
+  }
+
+  #chat strong {
+
+  	text-transform: uppercase;
+
+  }
+
   #texts {
     color: #fff;
   }
@@ -100,29 +112,31 @@
   </div>
   <script src='/js/socket.io.js'></script>
   <script>
+  var user = '{{USER}}';
+
   document.addEventListener("keypress", function(e) {
     var key = e.keyCode || e.which;
 
     if (key == 13) {
-      send();
+      sendMessage();
     }
   });
 
-  var socket = io();
+  var socket = io({query: {user:user}});
   var $canvas = document.querySelector('canvas');
   $canvas.width = window.screen.width;
   $canvas.height = window.screen.height;
 
   var $button = document.querySelector('button');
   var $input = document.querySelector('input');
-  $button.addEventListener('click', send);
+  $button.addEventListener('click', sendMessage);
 
-  socket.on('new message', function(message) {
+  socket.on('newMessage', (message) => {
 
     var $ul = document.querySelector('#chat ul');
     var $li = document.createElement('li');
-    $li.innerText = message;
-    $ul.appendChild($li)
+    $li.innerHTML = `<strong>${message.user}:</strong> ${message.message}`;
+    $ul.appendChild($li);
 
   });
 
@@ -135,29 +149,24 @@
 
   }
 
-  var user = '{{USER}}';
-
-  var fs = require('fs');
-
-
   function sendMessage(e) {
 
-    if(e.key !== 'Enter') return;
-    if(document.activeElement.tagName !== 'INPUT' ) return;
+    if(e.key && e.key !== 'Enter') return;
+    if(document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'BUTTON' ) return;
     if($input.value === '') return;
     socket.emit('message', {message: $input.value, user: user});
     $input.value = '';
 
   }
 
-  socket.on('newMessage', (message) => {
-
-    var $ul = document.querySelector('#chat ul');
-    var $li = document.createElement('li');
-    $li.innerHTML = `<strong>${message.user}:</strong> ${message.message}`;
-    $ul.appendChild($li);
-
-  });
+  // socket.on('newMessage', (message) => {
+  //
+  //   var $ul = document.querySelector('#chat ul');
+  //   var $li = document.createElement('li');
+  //   $li.innerHTML = `<strong>${message.user}:</strong> ${message.message}`;
+  //   $ul.appendChild($li);
+  //
+  // });
 
   </script>
 </body>

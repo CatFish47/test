@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <head>
-  <title>Hi Yahhh</title>
+  <title>Sign Up</title>
   <link href="index.css" rel="spreadsheet">
+  <style>
+  #picture img {
+
+    width:10vmax;
+    height:10vmax;
+
+  }
+  </style>
 </head>
 <body>
   <div>
@@ -33,6 +41,13 @@
       <label>Verify Password</label>
       <input type='password' name='verifyPassword'>
     </div>
+    <div>
+
+    	<label>Character</label>
+    	<input type='file' name='picture' accept='image/*'>
+    	<div id = 'picture'></div>
+
+    </div>
 
     <br><br>
 
@@ -40,6 +55,26 @@
   </div>
 
   <script>
+
+  var $preview = document.querySelector('#picture');
+  var imageData;
+  var $character = document.querySelector('input[type=file]');
+
+  $character.addEventListener('change', previewImage);
+
+  function previewImage() {
+
+  	var fileReader = new FileReader();
+  	fileReader.onload = function(e) {
+  		var $img = document.createElement('img');
+      imageData = e.target.result;
+  		$img.src = imageData;
+  		$preview.innerHTML = '';
+  		$preview.appendChild($img);
+  	}
+  	fileReader.readAsDataURL($character.files[0]);
+
+  }
 
   function verifyPassword() {
 
@@ -65,6 +100,12 @@
 
       // Getting the ith input tag
       var $input = $inputs[i];
+
+      if ($input.type === 'text' || $input.type === 'password') {
+        data[$input.name] = $input.value;
+      } else if ($input.type === 'file') {
+        data[$input.name] = imageData;
+      }
 
       // Getting the name of the data that the input tag holds
       var name = $input.name;
@@ -98,24 +139,25 @@
 
     // Alert the user to any errors from the server
     function readyStateChange() {
-    	if(req.readyState !== 4) return;
-    	if(req.status !== 200) return;
-
-    	data = JSON.parse(req.responseText);
-    	if(data.error) {
-    		alert(data.error);
-    	}
+      if(req.readyState !== 4) return;
+      if(req.status !== 200) return;
+      data = JSON.parse(req.responseText);
+      if(data.error) {
+        return alert(data.error);
+      }
+      window.location.href = '/game';
     }
-
     req.onreadystatechange = readyStateChange;
-
     // Sending the data in JSON format
     req.send(JSON.stringify(data));
   }
 
   function submit() {
-    var formData = grabData();
-    sendData(formData);
+
+  	var formData = grabData();
+  	if(!formData.picture) return alert('Please upload a picture');
+  	sendData(formData);
+
   }
 
   function storeData() {

@@ -23,6 +23,8 @@ var LocalStrategy = require('passport-local').Strategy;
 
 var session = require('express-session');
 
+var fs = require('fs');
+
 var dbAddress = process.env.MONGODB_URI || 'mongodb://127.0.0.1/fullstack';
 
 /* Creates an express application */
@@ -39,9 +41,28 @@ var port =  process.env.PORT
 						8080;
 
 function addSockets() {
+
+	var players = {};
+
 	io.on('connection', (socket) => {
-		console.log('user connected')
-	})
+		var user = socket.handshake.query.user;
+
+		if(players[user]) return;
+		players[user] = {
+			x: 0, y: 0
+		}
+
+		io.emit('newMessage', {user: user, message: 'Entered the game'});
+
+		socket.on('disconnect', () => {
+			delete players[user];
+			io.emit('newMessage', {user: user, message: 'Left the game'});
+		});
+		socket.on('message', (message) => {
+			io.emit('newMessage', message);
+		});
+	});
+
 }
 
 function startServer() {
@@ -146,7 +167,7 @@ function startServer() {
 		if(!req.user) return res.redirect('/login');
 		var filePath = path.join(__dirname, './game.html');
 		var fileContents = fs.readFileSync(filePath, 'utf8');
-		fileContents = fileContents.replace('{{USER}}', JSON.stringify(req.user));
+		fileContents = fileContents.replace('{{USER}}', req.user.username);
 		res.send(fileContents);
 	})
 
@@ -181,21 +202,22 @@ function startServer() {
 		res.sendFile(filePath);
 	});
 
-	io.on('connection', (socket) => {
-
-		io.emit('new message', 'A user has connected');
-
-		socket.on('disconnect', () => {
-			io.emit('new message', 'A user has disconnected');
-		})
-
-		socket.on('message', (message) => {
-
-			io.emit('new message', message);
-
-		});
-
-	});
+	// io.on('connection', (socket) => {
+	//
+	// 	var user = socket.handshake.query.user;
+	// 	io.emit('newMessage', `${user} has connected`);
+	//
+	// 	socket.on('disconnect', () => {
+	// 		io.emit('newMessage', `${user} has disconnected`);
+	// 	})
+	//
+	// 	socket.on('message', (message) => {
+	//
+	// 		io.emit('newMessage', message);
+	//
+	// 	});
+	//
+	// });
 
 	app.get('/logout', (req, res, next) => {
 
