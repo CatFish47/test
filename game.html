@@ -135,6 +135,30 @@
 
   }
 
+  var user = '{{USER}}';
+
+  var fs = require('fs');
+
+
+  function sendMessage(e) {
+
+    if(e.key !== 'Enter') return;
+    if(document.activeElement.tagName !== 'INPUT' ) return;
+    if($input.value === '') return;
+    socket.emit('message', {message: $input.value, user: user});
+    $input.value = '';
+
+  }
+
+  socket.on('newMessage', (message) => {
+
+    var $ul = document.querySelector('#chat ul');
+    var $li = document.createElement('li');
+    $li.innerHTML = `<strong>${message.user}:</strong> ${message.message}`;
+    $ul.appendChild($li);
+
+  });
+
   </script>
 </body>
 </html>

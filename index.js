@@ -143,10 +143,11 @@ function startServer() {
 	})
 
 	app.get('/game', (req, res, next) => {
-		if(!req.user) res.redirect('./login')
+		if(!req.user) return res.redirect('/login');
 		var filePath = path.join(__dirname, './game.html');
-
-		res.sendFile(filePath);
+		var fileContents = fs.readFileSync(filePath, 'utf8');
+		fileContents = fileContents.replace('{{USER}}', JSON.stringify(req.user));
+		res.send(fileContents);
 	})
 
 	app.post('/game', (req, res, next) => {
