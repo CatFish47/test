@@ -52,14 +52,20 @@ function addSockets() {
 			x: 0, y: 0
 		}
 
+		io.emit('playerUpdate', players);
 		io.emit('newMessage', {user: user, message: 'Entered the game'});
 
 		socket.on('disconnect', () => {
 			delete players[user];
+			io.emit('playerUpdate', players);
 			io.emit('newMessage', {user: user, message: 'Left the game'});
 		});
 		socket.on('message', (message) => {
 			io.emit('newMessage', message);
+		});
+		socket.on('playerUpdate', (player) => {
+			player[user] = player;
+			io.emit('playerUpdate', players);
 		});
 	});
 
@@ -202,29 +208,38 @@ function startServer() {
 		res.sendFile(filePath);
 	});
 
-	// io.on('connection', (socket) => {
-	//
-	// 	var user = socket.handshake.query.user;
-	// 	io.emit('newMessage', `${user} has connected`);
-	//
-	// 	socket.on('disconnect', () => {
-	// 		io.emit('newMessage', `${user} has disconnected`);
-	// 	})
-	//
-	// 	socket.on('message', (message) => {
-	//
-	// 		io.emit('newMessage', message);
-	//
-	// 	});
-	//
-	// });
+	app.get('/js/game.js', (req, res, next) => {
+		var filePath = path.join(__dirname, './js/game.js');
+
+		res.sendFile(filePath);
+	})
 
 	app.get('/logout', (req, res, next) => {
 
-	req.logOut();
-	res.redirect('/login');
+		req.logOut();
+		res.redirect('/login');
 
-});
+	});
+
+	app.get('/picture/:username', (req, res, next) => {
+		if (!req.user) return res.send('NOT LOGGED IN!!!');
+
+		usermodel.findOne({username: req.params.username}, function(err, user) {
+			if (err) return res.send(err);
+
+			try {
+				var imageType = user.picture.match(/^data:image\/([a-zA-Z0-9]*);/)[1];
+				var base64Data = user.picture.split(',')[1];
+				var binaryData = new Buffer(base64Data, 'base64');
+				res.contentType('image/' + imageType);
+				res.end(binaryData, 'binary');
+			} catch(ex) {
+				console.log(ex);
+				res.send(ex);
+			}
+		});
+
+	});
 
 	/* Defines what function to all when the server recieves any request from http://localhost:8080 */
 	server.on('listening', () => {

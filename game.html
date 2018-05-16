@@ -118,7 +118,7 @@
     var key = e.keyCode || e.which;
 
     if (key == 13) {
-      sendMessage();
+      sendMessage(e);
     }
   });
 
@@ -140,15 +140,6 @@
 
   });
 
-  function send(message) {
-
-    if($input.value) {
-      socket.emit('message', $input.value);
-      $input.value = '';
-    }
-
-  }
-
   function sendMessage(e) {
 
     if(e.key && e.key !== 'Enter') return;
@@ -159,15 +150,7 @@
 
   }
 
-  // socket.on('newMessage', (message) => {
-  //
-  //   var $ul = document.querySelector('#chat ul');
-  //   var $li = document.createElement('li');
-  //   $li.innerHTML = `<strong>${message.user}:</strong> ${message.message}`;
-  //   $ul.appendChild($li);
-  //
-  // });
-
   </script>
+  <script src = "/js/game.js"></script>
 </body>
 </html>
